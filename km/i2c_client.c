@@ -154,6 +154,8 @@ static int SSD1306_DisplayInit(void)
      * links:
      * https://github.com/Digilent/Zybo-Z7-SW/blob/5d358aa3469869382f9fb515b65af3469775e3c8/src/Zybo-Z7-20-pcam-5c/src/ov5640/OV5640.h#L676
      * https://github.com/torvalds/linux/blob/master/drivers/media/i2c/ov5640.c#L3763
+     * https://github.com/robingujjar/Camera-driver/blob/master/ov5640.c#L31
+     * make sure to initialize gpio if using data pins
     */
     
     return 0;
