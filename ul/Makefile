@@ -1,9 +1,9 @@
 CC := arm-linux-gnueabihf-gcc
 CFLAGS := -Wall
 
-ktimer: ktimer.c
-	$(CC) $(CFLAGS) -o ktimer ktimer.c -static
+book_reader: book_reader.c
+	$(CC) $(CFLAGS) -o book_reader book_reader.c -static
 
 clean:
-	rm -f ktimer
+	rm -f book_reader
 

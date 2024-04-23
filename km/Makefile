@@ -1,5 +1,5 @@
 ifneq ($(KERNELRELEASE),)
-	obj-m := i2cdriver.o
+	obj-m := manager.o
 else
 	KERNELDIR := $(EC535)/bbb/stock/stock-linux-4.19.82-ti-rt-r33
 	PWD := $(shell pwd)
