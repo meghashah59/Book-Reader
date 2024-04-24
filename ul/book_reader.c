@@ -33,7 +33,6 @@ int main() {
 	
 	
 	struct sigaction action;
-	struct sigaction sigterm_action;
 
 	fd = open("/dev/manager", O_WRONLY);
 	if (fd== -1) {
@@ -52,9 +51,10 @@ int main() {
 	fcntl(fd, F_SETFL, oflags | FASYNC);
 
 	
-	scanner();
+	pause();
 	
-
+	printf("closing file\n");
+	close(fd);
 	
 	return 0;
 }
@@ -65,19 +65,9 @@ int main() {
 // SIGIO handler
 void sighandler(int signo)
 {
-	if (mode == READMODE){
-		printf("signal handler: %d\n",mode);
-		mode = DEFAULT;
-		image_to_text();
-	} else if (mode == SCANMODE){
-		printf("signal handler: %d\n",mode);
-		mode = DEFAULT;
-		scanner();
-	} else {
-		printf("signal handler: %d\n",mode);
-		mode = DEFAULT;
-		close(fd);
-	}
+	strcpy(user_input,"0");
+	scanner();
+	printf("signal received\n");
 	
 
 }
@@ -85,37 +75,33 @@ void sighandler(int signo)
 // asks I2C driver to produce a jpeg file
 void scanner(void){
 	// we can later add button interrupt for page flip
-	mode= READMODE;
-	printf("scanner function: %d\n",mode);
-	if(write(fd, user_input, strlen(user_input)) == -1) {
-		perror("Failed to write message");
-		close(fd);
-		exit(EXIT_FAILURE);
-	}
-	pause(); //sleep until capturing image
+	//mode= READMODE;
+	printf("scanner function\n");
+	image_to_text();
 }
 
 // converts the generated jpeg file to text file
 void image_to_text(void){
-	printf("image_to_text: %d\n", mode);
+	printf("image_to_text\n");
 	text_to_audio();
 }
 
 // converts genereate text file to audio signal
 void text_to_audio(void){
-	printf("text_to_audio: %d\n", mode);
+	printf("text_to_audio\n");
 	reader();
 }
 
 // send audio signal to ALSA driver
 void reader(){
 	mode= SCANMODE;
-	printf("reader: %d\n", mode);
+	printf("reader\n");
+	strcpy(user_input,"1");
 	if(write(fd, user_input, strlen(user_input)) == -1) {
 		perror("Failed to write message");
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	pause(); // sleep until reading
+	
 }
 

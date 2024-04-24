@@ -14,14 +14,10 @@
 #include <linux/string.h>
 #include <linux/sched.h> /* get user pid */
 #include <linux/seq_file.h>
+#include <linux/gpio.h>
 
 #define BUFFER_SIZE 1024
-// #define TIMER_LIST_LENGTH 5
-
-// struct my_timer_data {
-//     struct timer_list timer;
-// 	char message[128];
-// };
+#define BUTTON 67
 
 /* Declaration of memory.c functions */
 static int manager_open(struct inode *inode, struct file *filp);
@@ -60,20 +56,14 @@ static int manager_major = 61;
 /* Buffer to store data */
 static char output_buffer[BUFFER_SIZE];
 
-
-int read_flag = 0;
-// int max_timers = 1;
-// char read_existing_timer[128];
-
-
 struct timer_list timer;
-// static struct my_timer_data timers[TIMER_LIST_LENGTH];
 static struct proc_dir_entry *proc_entry;
 struct fasync_struct *async_queue; /* structure for keeping track of asynchronous readers */
 
-static unsigned long start_time;
 static pid_t user_pid = -1;
-char command[256];
+bool user_is_ready = false;
+bool button_press = false;
+int time_in_s = 1;
 
 static int manager_init(void)
 {
@@ -94,13 +84,29 @@ static int manager_init(void)
     if (!proc_entry) {
         printk(KERN_ALERT "manager : Proc entry creation failed\n");
         return -ENOMEM;
-    }
-	start_time = jiffies;
-
-	
+    }	
 	printk(KERN_ALERT "Inserting manager module\n"); 
 	return 0;
 
+    // gpio initialization
+    if(gpio_request(BUTTON,"BUTTON") < 0) {
+        printk(KERN_ALERT "ERROR: GPIO %d request\n",BUTTON);
+        goto r_BUTTON;
+    }
+    gpio_direction_input(BUTTON);
+
+
+    unsigned long expires;
+    expires = jiffies + msecs_to_jiffies(time_in_s * 1000);
+    memset(output_buffer, 0, BUFFER_SIZE);
+    timer_setup(&timer, timer_callback, TIMER_DEFERRABLE);
+    timer.expires = expires;
+    add_timer(&timer);
+    user_pid = current->pid;
+    printk(KERN_INFO "Timer started\n");
+	
+r_BUTTON:
+    gpio_free(BUTTON);
 	
 }
 
@@ -114,6 +120,9 @@ static void manager_exit(void)
     del_timer(&timer);
 
 	remove_proc_entry("manager", NULL);
+
+    gpio_set_value(BUTTON,0);
+    gpio_free(BUTTON);
 }
 
 static int manager_open(struct inode *inode, struct file *filp)
@@ -141,114 +150,20 @@ static int manager_release(struct inode *inode, struct file *filp)
 }
 
 
-/*
-static ssize_t manager_read(struct file *filp, char *buf, 
-							size_t count, loff_t *f_pos)
-{ 
-	//struct timer_info *timer_data;
-    	
-    	
-    int bytes_read = 0;
-	int buffer_pos = 0;
-
-	memset(output_buffer, 0, BUFFER_SIZE);
-	
-	if (read_flag ==0) {
-		int i;
-		for (i = 0; i < TIMER_LIST_LENGTH; ++i) {
-			struct my_timer_data *data = &timers[i];
-			if (strcmp(data->message, "") != 0) {
-		
-				//printk(KERN_INFO "Message %s and time remaining %ld\n", data->message, get_time_remaining(data));
-				int written = snprintf(output_buffer+buffer_pos, sizeof(output_buffer) - buffer_pos, "%s %ld\n",data->message,get_time_remaining(data));
-		
-
-				// Update the total bytes_read
-				buffer_pos += written; //strlen(output_buffer + buffer_pos);
-
-				// Check if there is enough space in the buffer
-				if (buffer_pos >= BUFFER_SIZE)
-					break;  // Stop appending if the buffer is full
-			
-			}
-    	}
-
-		//printk(KERN_INFO "%s\n", output_buffer);
-
-    		// Copy the formatted string to user space
-		if (*f_pos ==0) {
-			bytes_read = min(count, strlen(output_buffer));
-			if (copy_to_user(buf, output_buffer, BUFFER_SIZE) != 0)
-			{
-				return -EFAULT;
-			}
-			*f_pos += bytes_read;//buffer_pos;
-			//bytes_read = buffer_pos;
-		
-		}
-
-    	// Reset the position for the next read
-    	
-    	return bytes_read;
-	}
-
-	else if (read_flag ==1) {
-		int written2=snprintf(output_buffer+buffer_pos, sizeof(output_buffer) - buffer_pos, "The timer %s was updated!\n", read_existing_timer);
-		buffer_pos += written2;
-
-		bytes_read = min(count, strlen(output_buffer));
-		if (copy_to_user(buf, output_buffer, BUFFER_SIZE) != 0)
-		{
-			return -EFAULT;
-		}
-		*f_pos += bytes_read;//buffer_pos;
-
-
-    	// Reset the position for the next read
-		read_flag=0;
-    	
-    	return bytes_read;
-	}
-	else if (read_flag ==2) {
-		int written2=snprintf(output_buffer+buffer_pos, sizeof(output_buffer) - buffer_pos, "%d timer(s) already exist(s)!\n", max_timers);
-		buffer_pos += written2;
-
-		bytes_read = min(count, strlen(output_buffer));
-		if (copy_to_user(buf, output_buffer, BUFFER_SIZE) != 0)
-		{
-			return -EFAULT;
-		}
-		*f_pos += bytes_read;//buffer_pos;
-
-
-    	// Reset the position for the next read
-		read_flag=0;
-    	
-    	return bytes_read;
-	}
-
-	 
-}
-*/
-
 static ssize_t manager_write(struct file *filp, const char *buf,
                              size_t count, loff_t *f_pos)
 {
     	// Assuming buf contains the expiration time and message separated by a space
-	unsigned long expires;
-    expires = jiffies + msecs_to_jiffies(10 * 1000);
-    memset(output_buffer, 0, BUFFER_SIZE);
-    timer_setup(&timer, timer_callback, TIMER_DEFERRABLE);
-    timer.expires = expires;
-    add_timer(&timer);
-    user_pid = current->pid;
-    printk(KERN_INFO "Timer 10s started\n");
 	
 
 	if (copy_from_user(output_buffer, buf, count)!=0)
 	{
 		return -EFAULT;
 	}
+
+    if (output_buffer[0]=='1'){
+        user_is_ready = true;
+    }
 
 
     // Move the position for the next write
@@ -259,12 +174,18 @@ static ssize_t manager_write(struct file *filp, const char *buf,
 
 static void timer_callback(struct timer_list *t)
 {
-	del_timer(&timer);
-
-	if (async_queue)
-        kill_fasync(&async_queue, SIGIO, POLL_IN);
+	mod_timer(&timer, jiffies + msecs_to_jiffies(time_in_s*1000));
+    if (gpio_get_value(BUTTON) == 1) 
+        button_press = true;
+    if (button_press && user_is_ready){
+        button_press = false;
+        user_is_ready = false;
+        if (async_queue){
+            kill_fasync(&async_queue, SIGIO, POLL_IN);
+        }
+	    user_pid = -1;
+    }
 	
-	user_pid = -1;
     // printk(KERN_INFO "%s\n", data->message);
 }
 
