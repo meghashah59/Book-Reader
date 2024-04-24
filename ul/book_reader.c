@@ -50,7 +50,7 @@ int main() {
 	oflags = fcntl(fd, F_GETFL);
 	fcntl(fd, F_SETFL, oflags | FASYNC);
 
-	
+	printf("going to sleep!\n");
 	pause();
 	
 	printf("closing file\n");
@@ -76,18 +76,30 @@ void sighandler(int signo)
 void scanner(void){
 	// we can later add button interrupt for page flip
 	//mode= READMODE;
+	int retVal = system("libcamera-jpeg -o /root/image.jpg");
+	if (retVal == 0) {
+        printf("Command executed successfully.");
+    }
 	printf("scanner function\n");
 	image_to_text();
 }
 
 // converts the generated jpeg file to text file
 void image_to_text(void){
+	int retVal = system("tesseract /root/image.jpg /root/text.txt");
+	if (retVal == 0) {
+        printf("Command executed successfully.");
+    }
 	printf("image_to_text\n");
 	text_to_audio();
 }
 
 // converts genereate text file to audio signal
 void text_to_audio(void){
+	int retVal = system("espeak /root/txt.txt /root/read.wav");
+	if (retVal == 0) {
+        printf("Command executed successfully.");
+    }
 	printf("text_to_audio\n");
 	reader();
 }
@@ -102,6 +114,9 @@ void reader(){
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	
+	int retVal = system("aplay /root/read.wav");
+	if (retVal == 0) {
+        printf("Command executed successfully.");
+    }
 }
 
