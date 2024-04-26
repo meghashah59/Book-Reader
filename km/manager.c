@@ -6,7 +6,7 @@
 #include <linux/fs.h> /* everything... */
 #include <linux/errno.h> /* error codes */
 #include <linux/types.h> /* size_t */
-#include <linux/proc_fs.h>
+#include <linux/proc_fs.h> /* proc_create */
 #include <linux/fcntl.h> /* O_ACCMODE */
 #include <asm/system_misc.h> /* cli(), *_flags */
 #include <linux/uaccess.h>
@@ -17,7 +17,7 @@
 #include <linux/gpio.h>
 
 #define BUFFER_SIZE 1024
-#define BUTTON 67
+#define BUTTON 17
 
 /* Declaration of memory.c functions */
 static int manager_open(struct inode *inode, struct file *filp);
@@ -69,6 +69,8 @@ static int manager_init(void)
 {
 	
 	int result;
+    unsigned long expires;
+    const struct proc_ops *p_ops = (struct proc_ops*) &manager_fops;
 
 	/* Registering device */
 	result = register_chrdev(manager_major, "manager", &manager_fops);
@@ -79,7 +81,7 @@ static int manager_init(void)
 		return result;
 	}
 
-	proc_entry = proc_create("manager", 0444, NULL, &manager_fops);
+	proc_entry = proc_create("manager", 0444, NULL, p_ops);
 
     if (!proc_entry) {
         printk(KERN_ALERT "manager : Proc entry creation failed\n");
@@ -96,7 +98,6 @@ static int manager_init(void)
     gpio_direction_input(BUTTON);
 
 
-    unsigned long expires;
     expires = jiffies + msecs_to_jiffies(time_in_s * 1000);
     memset(output_buffer, 0, BUFFER_SIZE);
     timer_setup(&timer, timer_callback, TIMER_DEFERRABLE);
