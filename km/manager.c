@@ -18,10 +18,10 @@
 
 #define BUFFER_SIZE 1024
 //#define BUTTON 67
-#define BUTTON 17
-#define RED 68
-#define YELLOW 48
-#define GREEN 49
+#define BUTTON 26
+#define RED 22
+#define YELLOW 27
+#define GREEN 17
 
 /* Declaration of memory.c functions */
 static int manager_open(struct inode *inode, struct file *filp);

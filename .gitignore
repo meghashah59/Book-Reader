@@ -6,3 +6,6 @@ Module.symvers
 *.mod.c
 *.o
 modules.order
+book_reader
+book_reader_remove
+syscheck
