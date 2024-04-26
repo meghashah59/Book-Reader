@@ -1,5 +1,6 @@
-CC := arm-linux-gnueabihf-gcc
-CFLAGS := -Wall
+#CC := arm-linux-gnueabihf-gcc
+CC := gcc
+CFLAGS := -Wall -Werror
 
 book_reader: book_reader.c
 	$(CC) $(CFLAGS) -o book_reader book_reader.c -static
