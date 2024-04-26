@@ -105,19 +105,19 @@ static int manager_init(void)
         printk(KERN_ALERT "ERROR: GPIO %d request\n",RED);
         goto err_LED_R;
     }
-    gpio_direction_output(RED);
+    gpio_direction_output(RED,0);
 
     if(gpio_request(YELLOW,"YELLOW") < 0) {
         printk(KERN_ALERT "ERROR: GPIO %d request\n",YELLOW);
         goto err_LED_Y;
     }
-    gpio_direction_output(YELLOW);
+    gpio_direction_output(YELLOW,0);
 
     if(gpio_request(GREEN,"GREEN") < 0) {
         printk(KERN_ALERT "ERROR: GPIO %d request\n",GREEN);
         goto err_LED_G;
     }
-    gpio_direction_output(GREEN);
+    gpio_direction_output(GREEN,0);
 
     expires = jiffies + msecs_to_jiffies(time_in_s * 1000);
     memset(output_buffer, 0, BUFFER_SIZE);
@@ -134,7 +134,7 @@ err_LED_R:
 err_LED_Y:
     gpio_free(YELLOW);
 err_LED_G:
-    gpio_free(GREEEN);
+    gpio_free(GREEN);
 	
 }
 
@@ -195,17 +195,17 @@ static ssize_t manager_write(struct file *filp, const char *buf,
 		return -EFAULT;
 	}
 
-   if (output_buffer[0]=='01'){
+    if (output_buffer[0]=='0' && output_buffer[1]=='1'){
         gpio_set_value(RED,1);
         gpio_set_value(YELLOW,0);
         gpio_set_value(GREEN,0);
     }
-    else if (output_buffer[0]=='10'){
+    else if (output_buffer[0]=='1' && output_buffer[1]=='0'){
         gpio_set_value(RED,0);
         gpio_set_value(YELLOW,1);
         gpio_set_value(GREEN,0);
     }
-    else if (output_buffer[0]=='11'){
+    else if (output_buffer[0]=='1' && output_buffer[1]=='1'){
         user_is_ready = true;
         gpio_set_value(RED,0);
         gpio_set_value(YELLOW,0);
@@ -255,7 +255,7 @@ static int manager_proc_show(struct seq_file *m, void *v)
     else if (gpio_get_value(GREEN)==1)
         seq_printf(m, "Now, reading!\n");
     else
-        seq_printf(m, "Something went wrong\n")
+        seq_printf(m, "Something went wrong\n");
     return 0;
 }
 
