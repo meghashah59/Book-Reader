@@ -18,6 +18,9 @@
 
 #define BUFFER_SIZE 1024
 #define BUTTON 67
+#define RED 68
+#define YELLOW 48
+#define GREEN 49
 
 /* Declaration of memory.c functions */
 static int manager_open(struct inode *inode, struct file *filp);
@@ -91,10 +94,27 @@ static int manager_init(void)
     // gpio initialization
     if(gpio_request(BUTTON,"BUTTON") < 0) {
         printk(KERN_ALERT "ERROR: GPIO %d request\n",BUTTON);
-        goto r_BUTTON;
+        goto err_BUTTON;
     }
     gpio_direction_input(BUTTON);
 
+    if(gpio_request(RED,"RED") < 0) {
+        printk(KERN_ALERT "ERROR: GPIO %d request\n",RED);
+        goto err_LED_R;
+    }
+    gpio_direction_output(RED);
+
+    if(gpio_request(YELLOW,"YELLOW") < 0) {
+        printk(KERN_ALERT "ERROR: GPIO %d request\n",YELLOW);
+        goto err_LED_Y;
+    }
+    gpio_direction_output(YELLOW);
+
+    if(gpio_request(GREEN,"GREEN") < 0) {
+        printk(KERN_ALERT "ERROR: GPIO %d request\n",GREEN);
+        goto err_LED_G;
+    }
+    gpio_direction_output(GREEN);
 
     unsigned long expires;
     expires = jiffies + msecs_to_jiffies(time_in_s * 1000);
@@ -105,8 +125,14 @@ static int manager_init(void)
     user_pid = current->pid;
     printk(KERN_INFO "Timer started\n");
 	
-r_BUTTON:
+err_BUTTON:
     gpio_free(BUTTON);
+err_LED_R:
+    gpio_free(RED);
+err_LED_Y:
+    gpio_free(YELLOW);
+err_LED_G:
+    gpio_free(GREEEN);
 	
 }
 
@@ -123,6 +149,12 @@ static void manager_exit(void)
 
     gpio_set_value(BUTTON,0);
     gpio_free(BUTTON);
+    gpio_set_value(RED,0);
+    gpio_free(RED);
+    gpio_set_value(YELLOW,0);
+    gpio_free(YELLOW);
+    gpio_set_value(GREEN,0);
+    gpio_free(GREEN);
 }
 
 static int manager_open(struct inode *inode, struct file *filp)
@@ -161,10 +193,22 @@ static ssize_t manager_write(struct file *filp, const char *buf,
 		return -EFAULT;
 	}
 
-    if (output_buffer[0]=='1'){
-        user_is_ready = true;
+   if (output_buffer[0]=='01'){
+        gpio_set_value(RED,1);
+        gpio_set_value(YELLOW,0);
+        gpio_set_value(GREEN,0);
     }
-
+    else if (output_buffer[0]=='10'){
+        gpio_set_value(RED,0);
+        gpio_set_value(YELLOW,1);
+        gpio_set_value(GREEN,0);
+    }
+    else if (output_buffer[0]=='11'){
+        user_is_ready = true;
+        gpio_set_value(RED,0);
+        gpio_set_value(YELLOW,0);
+        gpio_set_value(GREEN,1);
+    }
 
     // Move the position for the next write
     *f_pos += count;
@@ -202,7 +246,14 @@ static int manager_proc_show(struct seq_file *m, void *v)
     if (user_pid != -1) {
         seq_printf(m, "%d- user pid\n", user_pid);
     }
-
+    if (gpio_get_value(RED)==1)
+        seq_printf(m, "Press button to get started!\n");
+    else if(gpio_get_value(YELLOW)==1)
+        seq_printf(m,"Capturing page image!\n" );
+    else if (gpio_get_value(GREEN)==1)
+        seq_printf(m, "Now, reading!\n");
+    else
+        seq_printf(m, "Something went wrong\n")
     return 0;
 }
 
