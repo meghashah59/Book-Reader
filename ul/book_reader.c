@@ -50,6 +50,12 @@ int main() {
 	oflags = fcntl(fd, F_GETFL);
 	fcntl(fd, F_SETFL, oflags | FASYNC);
 
+	strcpy(user_input,"01");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
 	printf("going to sleep!\n");
 	pause();
 	
@@ -68,14 +74,18 @@ void sighandler(int signo)
 	strcpy(user_input,"0");
 	scanner();
 	printf("signal received\n");
-	
-
 }
 
 // asks I2C driver to produce a jpeg file
 void scanner(void){
 	// we can later add button interrupt for page flip
 	//mode= READMODE;
+	strcpy(user_input,"10");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
 	int retVal = system("libcamera-jpeg -o /root/image.jpg");
 	if (retVal == 0) {
         printf("Command executed successfully.");
@@ -108,7 +118,7 @@ void text_to_audio(void){
 void reader(){
 	mode= SCANMODE;
 	printf("reader\n");
-	strcpy(user_input,"1");
+	strcpy(user_input,"11");
 	if(write(fd, user_input, strlen(user_input)) == -1) {
 		perror("Failed to write message");
 		close(fd);
@@ -118,5 +128,11 @@ void reader(){
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
+	strcpy(user_input,"01");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
 }
 
