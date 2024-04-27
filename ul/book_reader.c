@@ -8,8 +8,6 @@
 #define DEFAULT 0
 #define READMODE 1
 #define SCANMODE 2
-//#define BASE_DIR /root
-#define BASE_DIR /home/mad-science-box/Book-Reader/ul
 
 void sighandler(int);
 void sighandler_remove(int);
@@ -88,7 +86,7 @@ void scanner(void){
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	int retVal = system("libcamera-jpeg -o BASE_DIR/image.jpg");
+	int retVal = system("libcamera-jpeg -o /home/mad-science-box/Book-Reader/ul/image.jpg");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -98,7 +96,7 @@ void scanner(void){
 
 // converts the generated jpeg file to text file
 void image_to_text(void){
-	int retVal = system("tesseract BASE_DIR/image.jpg BASE_DIR/text.txt");
+	int retVal = system("tesseract /home/mad-science-box/Book-Reader/ul/image.jpg /home/mad-science-box/Book-Reader/ul/text.txt");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -108,7 +106,7 @@ void image_to_text(void){
 
 // converts genereate text file to audio signal
 void text_to_audio(void){
-	int retVal = system("espeak BASE_DIR/txt.txt BASE_DIR/read.wav");
+	int retVal = system("espeak /home/mad-science-box/Book-Reader/ul/txt.txt /home/mad-science-box/Book-Reader/ul/read.wav");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -126,7 +124,7 @@ void reader(){
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	int retVal = system("aplay BASE_DIR/read.wav");
+	int retVal = system("aplay /home/mad-science-box/Book-Reader/ul/read.wav");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }

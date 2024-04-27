@@ -23,6 +23,7 @@
 #define YELLOW 27
 #define GREEN 17
 
+
 /* Declaration of memory.c functions */
 static int manager_open(struct inode *inode, struct file *filp);
 static int manager_release(struct inode *inode, struct file *filp);
@@ -75,7 +76,6 @@ static int manager_init(void)
 	int result;
     unsigned long expires;
     const struct proc_ops *p_ops = (struct proc_ops*) &manager_fops;
-
 	/* Registering device */
 	result = register_chrdev(manager_major, "manager", &manager_fops);
 	if (result < 0)
@@ -91,8 +91,8 @@ static int manager_init(void)
         printk(KERN_ALERT "manager : Proc entry creation failed\n");
         return -ENOMEM;
     }	
-	printk(KERN_ALERT "Inserting manager module\n"); 
-	return 0;
+	printk(KERN_INFO "Inserting manager module\n"); 
+	//return 0;
 
     // gpio initialization
     if(gpio_request(BUTTON,"BUTTON") < 0) {
@@ -119,13 +119,15 @@ static int manager_init(void)
     }
     gpio_direction_output(GREEN,0);
 
+    printk(KERN_ALERT "Module initializing...\n");
+
     expires = jiffies + msecs_to_jiffies(time_in_s * 1000);
     memset(output_buffer, 0, BUFFER_SIZE);
     timer_setup(&timer, timer_callback, TIMER_DEFERRABLE);
     timer.expires = expires;
     add_timer(&timer);
     user_pid = current->pid;
-    printk(KERN_INFO "Timer started\n");
+    printk(KERN_ALERT "Timer started\n");
 	
 err_BUTTON:
     gpio_free(BUTTON);
@@ -136,6 +138,7 @@ err_LED_Y:
 err_LED_G:
     gpio_free(GREEN);
 	
+    return 0;
 }
 
 static void manager_exit(void)
@@ -196,6 +199,7 @@ static ssize_t manager_write(struct file *filp, const char *buf,
 	}
 
     if (output_buffer[0]=='0' && output_buffer[1]=='1'){
+        user_is_ready = true;
         gpio_set_value(RED,1);
         gpio_set_value(YELLOW,0);
         gpio_set_value(GREEN,0);
@@ -206,13 +210,13 @@ static ssize_t manager_write(struct file *filp, const char *buf,
         gpio_set_value(GREEN,0);
     }
     else if (output_buffer[0]=='1' && output_buffer[1]=='1'){
-        user_is_ready = true;
         gpio_set_value(RED,0);
         gpio_set_value(YELLOW,0);
         gpio_set_value(GREEN,1);
     }
 
     // Move the position for the next write
+    printk(KERN_INFO "user_is_ready: %d\tgpio_get_value(BUTTON): %d", user_is_ready, gpio_get_value(BUTTON));
     *f_pos += count;
 
     return count;
@@ -248,6 +252,7 @@ static int manager_proc_show(struct seq_file *m, void *v)
     if (user_pid != -1) {
         seq_printf(m, "%d- user pid\n", user_pid);
     }
+    seq_printf(m, "user_is_ready: %d\tgpio_get_value(BUTTON): %d\n", user_is_ready, gpio_get_value(BUTTON));
     if (gpio_get_value(RED)==1)
         seq_printf(m, "Press button to get started!\n");
     else if(gpio_get_value(YELLOW)==1)
@@ -256,6 +261,7 @@ static int manager_proc_show(struct seq_file *m, void *v)
         seq_printf(m, "Now, reading!\n");
     else
         seq_printf(m, "Something went wrong\n");
+
     return 0;
 }
 
