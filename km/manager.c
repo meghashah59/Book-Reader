@@ -259,6 +259,8 @@ static int manager_proc_show(struct seq_file *m, void *v)
         seq_printf(m,"Capturing page image!\n" );
     else if (gpio_get_value(GREEN)==1)
         seq_printf(m, "Now, reading!\n");
+    else if (gpio_get_value(RED)==0 && gpio_get_value(YELLOW)==0 && gpio_get_value(GREEN)==0)
+        seq_printf(m, "Please load user module.\n");
     else
         seq_printf(m, "Something went wrong\n");
 
