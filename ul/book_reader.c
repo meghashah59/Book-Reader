@@ -57,7 +57,9 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 	printf("going to sleep!\n");
-	pause();
+    while(1){
+        pause();
+    }
 	
 	printf("closing file\n");
 	close(fd);
@@ -72,8 +74,8 @@ int main() {
 void sighandler(int signo)
 {
 	strcpy(user_input,"0");
-	scanner();
 	printf("signal received\n");
+	scanner();
 }
 
 // asks I2C driver to produce a jpeg file
@@ -96,7 +98,7 @@ void scanner(void){
 
 // converts the generated jpeg file to text file
 void image_to_text(void){
-	int retVal = system("tesseract /home/mad-science-box/Book-Reader/ul/image.jpg /home/mad-science-box/Book-Reader/ul/text.txt");
+	int retVal = system("tesseract /home/mad-science-box/Book-Reader/ul/image.jpg /home/mad-science-box/Book-Reader/ul/text");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -106,7 +108,8 @@ void image_to_text(void){
 
 // converts genereate text file to audio signal
 void text_to_audio(void){
-	int retVal = system("espeak /home/mad-science-box/Book-Reader/ul/txt.txt /home/mad-science-box/Book-Reader/ul/read.wav");
+    system("cat /home/mad-science-box/Book-Reader/ul/text.txt");
+	int retVal = system("espeak -f /home/mad-science-box/Book-Reader/ul/text.txt -w /home/mad-science-box/Book-Reader/ul/read.wav");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -116,7 +119,6 @@ void text_to_audio(void){
 
 // send audio signal to ALSA driver
 void reader(){
-	mode= SCANMODE;
 	printf("reader\n");
 	strcpy(user_input,"11");
 	if(write(fd, user_input, strlen(user_input)) == -1) {
@@ -134,5 +136,6 @@ void reader(){
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
+    //pause();
 }
 
