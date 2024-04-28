@@ -8,8 +8,6 @@
 #define DEFAULT 0
 #define READMODE 1
 #define SCANMODE 2
-//#define BASE_DIR /root
-#define BASE_DIR /home/mad-science-box/Book-Reader/ul
 
 void sighandler(int);
 void sighandler_remove(int);
@@ -52,8 +50,16 @@ int main() {
 	oflags = fcntl(fd, F_GETFL);
 	fcntl(fd, F_SETFL, oflags | FASYNC);
 
+	strcpy(user_input,"01");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
 	printf("going to sleep!\n");
-	pause();
+    while(1){
+        pause();
+    }
 	
 	printf("closing file\n");
 	close(fd);
@@ -68,17 +74,21 @@ int main() {
 void sighandler(int signo)
 {
 	strcpy(user_input,"0");
-	scanner();
 	printf("signal received\n");
-	
-
+	scanner();
 }
 
 // asks I2C driver to produce a jpeg file
 void scanner(void){
 	// we can later add button interrupt for page flip
 	//mode= READMODE;
-	int retVal = system("libcamera-jpeg -o BASE_DIR/image.jpg");
+	strcpy(user_input,"10");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
+	int retVal = system("libcamera-jpeg -o /home/mad-science-box/Book-Reader/ul/image.jpg");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -88,7 +98,7 @@ void scanner(void){
 
 // converts the generated jpeg file to text file
 void image_to_text(void){
-	int retVal = system("tesseract BASE_DIR/image.jpg BASE_DIR/text.txt");
+	int retVal = system("tesseract /home/mad-science-box/Book-Reader/ul/image.jpg /home/mad-science-box/Book-Reader/ul/text");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -98,7 +108,8 @@ void image_to_text(void){
 
 // converts genereate text file to audio signal
 void text_to_audio(void){
-	int retVal = system("espeak BASE_DIR/txt.txt BASE_DIR/read.wav");
+    system("cat /home/mad-science-box/Book-Reader/ul/text.txt");
+	int retVal = system("espeak -f /home/mad-science-box/Book-Reader/ul/text.txt -w /home/mad-science-box/Book-Reader/ul/read.wav");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
@@ -108,17 +119,23 @@ void text_to_audio(void){
 
 // send audio signal to ALSA driver
 void reader(){
-	mode= SCANMODE;
 	printf("reader\n");
-	strcpy(user_input,"1");
+	strcpy(user_input,"11");
 	if(write(fd, user_input, strlen(user_input)) == -1) {
 		perror("Failed to write message");
 		close(fd);
 		exit(EXIT_FAILURE);
 	}
-	int retVal = system("aplay BASE_DIR/read.wav");
+	int retVal = system("aplay /home/mad-science-box/Book-Reader/ul/read.wav");
 	if (retVal == 0) {
         printf("Command executed successfully.");
     }
+	strcpy(user_input,"01");
+	if(write(fd, user_input, strlen(user_input)) == -1) {
+		perror("Failed to write message");
+		close(fd);
+		exit(EXIT_FAILURE);
+	}
+    //pause();
 }
 
